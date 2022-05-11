@@ -52,9 +52,9 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "ateam",
+    "jungle-week6",
     /* First member's full name */
-    "Harry Bovik",
+    "park geon hee",
     /* First member's email address */
     "bovik@cs.cmu.edu",
     /* Second member's full name (leave blank if none) */
@@ -73,6 +73,7 @@ team_t team = {
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 char *heap_listp = 0;
+char *next_allocp;
 
 static void *coalesce(void *bp)
 {
@@ -100,6 +101,7 @@ static void *coalesce(void *bp)
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
+    next_allocp = bp;
     return bp;
 }
 
@@ -143,7 +145,22 @@ int mm_init(void)
         return -1;
     }
     
+    next_allocp = heap_listp; 
     return 0;
+}
+
+static void *next_fit(size_t asize)
+{
+    void *bp;
+
+    for (bp = next_allocp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if(!GET_ALLOC(HDRP(bp)) && asize <= GET_SIZE(HDRP(bp))){
+            next_allocp = bp;
+            return bp;
+        }
+    }
+    return NULL;
 }
 
 
@@ -196,7 +213,8 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size+ (DSIZE) + (DSIZE-1)) / DSIZE);
     }
 
-    if((bp = find_fit(asize)) != NULL){
+    if ((bp = next_fit(asize)) != NULL)
+    {
         place(bp, asize);
         return bp;
     }
